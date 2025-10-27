@@ -1,0 +1,5 @@
+Reglamento de multas
+- Multa por atraso: $500 por día por libro.
+- Tope de multa por libro: $10.000.
+- Bloqueo: Con multas pendientes superiores a $5.000 no se pueden realizar nuevos préstamos.
+- Excepciones: Feriados no contabilizan.

@@ -1,0 +1,5 @@
+Políticas de préstamos
+- Período estándar: 14 días por libro.
+- Renovación: 1 vez por 14 días adicionales si no hay reservas.
+- Límite: Hasta 3 libros prestados simultáneamente por usuario.
+- Reservas: Máximo 2 reservas activas.

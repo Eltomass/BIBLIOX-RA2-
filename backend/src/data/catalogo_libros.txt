@@ -1,0 +1,5 @@
+Catálogo interno de libros (extracto)
+- Cien años de soledad | Gabriel García Márquez | Sección Ficción, Estante 3, Nivel 2 | Disponible
+- 1984 | George Orwell | Sección Ficción, Estante 2, Nivel 1 | Prestado
+- Clean Code | Robert C. Martin | Sección Técnica, Estante 1, Nivel 4 | Disponible
+- El Quijote | Miguel de Cervantes | Sección Clásicos, Estante 5, Nivel 2 | Reservado

@@ -1,0 +1,18 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Estilos globales */
+:root {
+  --color-primary: #1e40af;
+  --color-secondary: #10b981;
+  --color-accent: #f59e0b;
+}
+
+html, body, #root {
+  height: 100%;
+}
+
+body {
+  @apply bg-gray-50 text-gray-800 font-inter;
+}
