@@ -17,7 +17,7 @@ vs = get_vectorstore()
 with st.sidebar:
 	st.header("⚙️ Configuración RAG")
 	k = st.slider("Documentos a recuperar (k)", 1, 8, 4)
-	st.caption("Modelo: llama3.1:8b en Ollama")
+	st.caption("Modelo: qwen2.5-coder:7b en Ollama")
 	st.divider()
 	upload = st.file_uploader("Cargar documentos internos (.txt)", type=["txt"], accept_multiple_files=True)
 	if upload:

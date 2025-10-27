@@ -11,7 +11,7 @@ IL1.3 - Integración LLM + Herramientas de Recuperación
 OLLAMA_BASE = "http://localhost:11434"
 
 
-def get_llm(model: str = "llama3.1:8b") -> Ollama:
+def get_llm(model: str = "qwen2.5-coder:7b") -> Ollama:
 	return Ollama(model=model, base_url=OLLAMA_BASE)
 
 
