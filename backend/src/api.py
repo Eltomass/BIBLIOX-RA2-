@@ -13,6 +13,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import requests
 import os
+import time
 
 # Importar el agente y sus dependencias
 import sys
@@ -20,6 +21,9 @@ import os
 sys.path.insert(0, os.path.dirname(__file__))
 
 from agents.agent import get_agent
+from monitoring.metrics import get_metrics_collector
+from monitoring.logger import get_logger
+from monitoring.security import SecurityValidator, get_rate_limiter
 
 # Base de Ollama y modelo LLM a utilizar
 OLLAMA_URL = os.environ.get("OLLAMA_BASE", "http://localhost:11434")
@@ -42,6 +46,11 @@ app.add_middleware(
 
 # Instancia global del agente
 agent = get_agent()
+
+# Sistema de observabilidad
+metrics = get_metrics_collector()
+logger = get_logger("backend/logs")
+rate_limiter = get_rate_limiter()
 
 class ChatRequest(BaseModel):
 	"""Payload de entrada del endpoint de chat."""
@@ -86,14 +95,96 @@ async def chat(req: ChatRequest):
 	- Usa memoria conversacional (IE3, IE4)
 	- Ejecuta herramientas automáticamente (IE2)
 	- Toma decisiones adaptativas (IE6)
+	- Sistema de observabilidad completo (RA3)
 	"""
+	# Generar trace ID único para trazabilidad
+	trace_id = logger.generate_trace_id()
+	
+	# IE6: Validación de seguridad - Rate Limiting
+	is_allowed, rate_error = rate_limiter.check_rate_limit(req.session_id)
+	if not is_allowed:
+		logger.warning('rate_limit_exceeded', {'session_id': req.session_id})
+		return ChatResponse(answer=f"⚠️ {rate_error}. Por favor espera un momento.")
+	
+	# IE6: Validación de seguridad - Prompt Injection
+	is_valid, validation_error = SecurityValidator.validate_input(req.question)
+	if not is_valid:
+		logger.warning('invalid_input_detected', {
+			'session_id': req.session_id,
+			'error': validation_error
+		})
+		metrics.track_error('security', 'InvalidInput', validation_error)
+		return ChatResponse(answer="⚠️ Por seguridad, no puedo procesar esta consulta.")
+	
+	# Iniciar tracking de métricas y logging
+	start_time = time.time()
+	
+	# Sanitizar PII de la query antes de loggear
+	sanitized_query = SecurityValidator.sanitize_pii(req.question)
+	metrics.start_request(trace_id, sanitized_query, req.session_id)
+	logger.log_request_start(trace_id, sanitized_query, req.session_id)
+	
 	try:
 		# Usar el agente con memoria y herramientas
+		agent_start = time.time()
 		answer = agent.think(req.question)
+		agent_end = time.time()
+		
+		# Registrar latencia del agente
+		metrics.track_component('agent.think', agent_start, agent_end, {
+			'query_length': len(req.question),
+			'response_length': len(answer)
+		})
+		
+		# Finalizar tracking exitoso
+		end_time = time.time()
+		total_latency = end_time - start_time
+		metrics.end_request(answer, status="success")
+		logger.log_request_end(answer, status="success", latency=total_latency)
+		
+		# Guardar métricas cada 10 requests
+		if len(metrics.metrics_data['requests']) % 10 == 0:
+			metrics.save_to_file('backend/logs/metrics.json')
 		
 		return ChatResponse(answer=answer)
+		
 	except Exception as e:
-		return ChatResponse(answer=f"Error en el agente: {str(e)}")
+		# Registrar error
+		end_time = time.time()
+		error_msg = str(e)
+		
+		metrics.track_error('api', type(e).__name__, error_msg)
+		metrics.end_request("", status="error")
+		logger.error('request_failed', {
+			'error_type': type(e).__name__,
+			'error_message': error_msg,
+			'latency': end_time - start_time
+		})
+		
+		# Guardar métricas en caso de error
+		metrics.save_to_file('backend/logs/metrics.json')
+		
+		return ChatResponse(answer=f"Error en el agente: {error_msg}")
+
+
+@app.get("/api/metrics")
+async def get_metrics_stats():
+	"""
+	Endpoint para consultar métricas del sistema en tiempo real.
+	Usado por el dashboard de Streamlit.
+	"""
+	try:
+		stats = metrics.get_summary_stats()
+		return {
+			"status": "success",
+			"data": stats,
+			"timestamp": time.time()
+		}
+	except Exception as e:
+		return {
+			"status": "error",
+			"error": str(e)
+		}
 
 
 @app.post("/api/plan", response_model=PlanResponse)

@@ -1,0 +1,2 @@
+{"timestamp": "2025-11-24T15:29:16.699220", "level": "INFO", "event": "request_start", "trace_id": "325872d0", "data": {"query": "Busca libros de programación", "session_id": "default"}}
+{"timestamp": "2025-11-24T15:29:16.918685", "level": "ERROR", "event": "request_failed", "trace_id": "325872d0", "data": {"error_type": "OllamaEndpointNotFoundError", "error_message": "Ollama call failed with status code 404. Maybe your model is not found and you should pull the model with `ollama pull qwen2.5-coder:7b`.", "latency": 0.22025418281555176}}

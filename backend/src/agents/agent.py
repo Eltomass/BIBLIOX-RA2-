@@ -14,12 +14,15 @@ Este módulo implementa un agente con:
 import re
 import sys
 import os
+import time
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from typing import List, Dict, Any, Tuple
 from agents.tools import AGENT_TOOLS
 from agents.memory import get_session_memory, get_semantic_memory
 from models.llm import get_llm
+from monitoring.metrics import get_metrics_collector
+from monitoring.logger import get_logger
 
 
 class LibraryAgent:
@@ -38,6 +41,10 @@ class LibraryAgent:
 		self.semantic_memory = get_semantic_memory()
 		self.plan = []
 		self.max_iterations = 5
+		
+		# Sistema de observabilidad
+		self.metrics = get_metrics_collector()
+		self.logger = get_logger()
 	
 	def think(self, question: str) -> str:
 		"""
@@ -270,13 +277,33 @@ Responde siguiendo el patrón ReAct y RECUERDA información importante del usuar
 		if tool_name not in self.tools:
 			return f"No se encontró la herramienta '{tool_name}'"
 		
+		# Registrar inicio de acción
+		self.logger.log_action(tool_name, tool_input)
+		
 		# Parsear input (simple para demo)
 		try:
 			# Ejecutar herramienta con input parseado
+			start_time = time.time()
 			result = self._call_tool(tool_name, tool_input)
+			end_time = time.time()
+			latency = end_time - start_time
+			
+			# Registrar ejecución exitosa de herramienta
+			self.metrics.track_tool(tool_name, latency, True, tool_input, result)
+			self.logger.log_observation(tool_name, result, latency)
+			
 			return result
 		except Exception as e:
-			return f"Error al ejecutar {tool_name}: {str(e)}"
+			end_time = time.time()
+			latency = end_time - start_time if 'start_time' in locals() else 0
+			error_msg = str(e)
+			
+			# Registrar error en herramienta
+			self.metrics.track_tool(tool_name, latency, False, tool_input, error_msg)
+			self.metrics.track_error('tool', type(e).__name__, f"{tool_name}: {error_msg}")
+			self.logger.log_error('tool', type(e).__name__, error_msg)
+			
+			return f"Error al ejecutar {tool_name}: {error_msg}"
 	
 	def _call_tool(self, tool_name: str, tool_input: str) -> str:
 		"""
