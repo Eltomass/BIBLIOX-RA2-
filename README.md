@@ -218,6 +218,12 @@ Final Answer: Sí, encontré estos libros...
 - `python src/api.py`: Inicia el servidor API
 - `streamlit run streamlit_app.py`: Inicia la interfaz Streamlit
 
+### Observabilidad y Dashboard
+- **Métricas**: Se registran métricas de latencia, uso de herramientas, errores, CPU y memoria en `backend/logs/metrics.json`.
+- **Logging estructurado**: Logs en formato JSON en `backend/logs/agent.log` con `trace_id` para trazabilidad.
+- **Dashboard Streamlit**: `backend/streamlit_dashboard.py` muestra KPIs, histogramas de latencia, uso de herramientas, recursos del sistema y tabla de errores con animaciones CSS profesionales. Se ejecuta con `streamlit run backend/streamlit_dashboard.py`.
+- **Seguridad**: Validación de entrada, sanitización de PII y limitación de velocidad (rate limiting).
+
 ## Funcionalidades
 
 - **Catálogo de Libros**: Búsqueda y filtrado avanzado
